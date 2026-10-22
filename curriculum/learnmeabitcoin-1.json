@@ -1,0 +1,17 @@
+[
+{"n":"LMAB: Keys, WIF and extended keys","r":["Learn Me A Bitcoin: WIF","https://learnmeabitcoin.com/technical/wif"],"i":[
+["What does WIF stand for?","Wallet Import Format",["Witness Input Field","Wrapped Internal Fingerprint","Wallet Integrity Format"],"wallet import"],
+["What checksum does Base58Check append to its payload?","The first 4 bytes of a double SHA-256 hash",["A CRC32 of the payload","The last byte of RIPEMD-160","A 2-byte parity value"],"double|sha.?256|4 bytes|four bytes"],
+["How many bits of entropy does a 12-word BIP39 mnemonic encode?","128",["64","256","512"],"\\b128\\b"],
+["Besides the key itself, what does an extended key (xprv/xpub) carry?","A chain code",["A nonce","A timelock","A bloom filter"],"chain ?code"]]},
+{"n":"LMAB: Transactions, signatures and PSBT","r":["Learn Me A Bitcoin: signatures","https://learnmeabitcoin.com/technical/keys/signature/"],"i":[
+["What does the scriptSig contain when spending a legacy P2PKH output?","A signature and the public key",["Only the public key hash","Only the previous txid","A Merkle proof"],"sig.*(pub|key)"],
+["What does a SIGHASH_ALL signature commit to?","All inputs and all outputs of the transaction",["Only its own input","Only the outputs","Only the fee"],"all (the )?(inputs|outputs)|everything"],
+["What is a PSBT (BIP174)?","A standard format for passing a partially signed transaction between tools",["A private key backup format","A fee-bumping rule","A Lightning invoice"],"partial|unsigned|bip ?174|sign.*(format|transaction)"],
+["How is a txid calculated?","Double SHA-256 of the transaction without witness data",["RIPEMD-160 of the outputs","SHA-1 of the inputs","A random value chosen by the sender"],"sha.?256|double"]]},
+{"n":"LMAB: Script validity and Taproot","r":["Learn Me A Bitcoin: Script","https://learnmeabitcoin.com/technical/script"],"i":[
+["What makes a legacy script valid?","It runs without error and leaves a non-zero value on top of the stack",["The stack ends empty","Every opcode is OP_TRUE","It is under 100 bytes"],"non.?zero|true|top of (the )?stack"],
+["What does a P2SH locking script commit to?","The hash of a redeem script",["A public key","A Merkle root of transactions","A signature"],"hash.*script|redeem"],
+["What does a Taproot key path spend reveal on-chain?","A single Schnorr signature",["A full script","A revoked state","A hash preimage"],"schnorr|single signature|one signature|signature"],
+["Which structure commits to many spending scripts in Taproot?","A Merkle tree (MAST)",["A bloom filter","A linked list","A bitmap"],"merkle|mast|tree"]]}
+]
