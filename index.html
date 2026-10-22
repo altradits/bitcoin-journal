@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitcoin Drill</title>
+<style>
+:root{--bg:#e9eef2;--card:#f7fafc;--fg:#10212e;--mut:#56687a;--bd:#c5d1dc;--ac:#2b5cff;--ok:#0a7d5a;--no:#b3261e;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1722;--card:#152332;--fg:#e6edf3;--mut:#93a5b8;--bd:#2a3d52;--ac:#7c9dff;--ok:#3ccf9a;--no:#ff7b72;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1722;--card:#152332;--fg:#e6edf3;--mut:#93a5b8;--bd:#2a3d52;--ac:#7c9dff;--ok:#3ccf9a;--no:#ff7b72;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:640px;margin:0 auto;padding:24px 18px 60px}
+h1,h2{font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;line-height:1.2;margin:.2em 0 .4em}
+h1{font-size:2.2rem}h2{font-size:1.5rem;line-height:1.35}
+.mut{color:var(--mut)}a{color:var(--ac)}
+.chain{border-left:2px solid var(--bd);margin:18px 0 18px 8px;padding-left:20px}
+button{font:inherit;color:var(--fg);cursor:pointer}
+.card{position:relative;display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:14px 16px;margin:0 0 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
+.card::before{content:"";position:absolute;left:-28px;top:20px;width:10px;height:10px;border-radius:50%;background:var(--ac)}
+.card:hover:not(.lock){border-color:var(--ac)}
+.lock{opacity:.5;cursor:not-allowed}.lock::before{background:var(--bd)}
+.cl::before{background:var(--ok)}
+.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--ac);transition:width .3s}
+.opt{display:block;width:100%;text-align:left;padding:12px 14px;margin:8px 0;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
+.opt:hover:not(:disabled){border-color:var(--ac)}
+.good{border-color:var(--ok)!important;background:color-mix(in srgb,var(--ok) 16%,var(--card))}
+.bad{border-color:var(--no)!important;background:color-mix(in srgb,var(--no) 14%,var(--card))}
+input{width:100%;box-sizing:border-box;padding:12px;font:inherit;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg)}
+.go{padding:11px 18px;margin-top:12px;border:0;border-radius:10px;background:var(--ac);color:#fff;font-weight:600}
+.ghost{padding:8px 0;margin-top:18px;border:0;background:none;color:var(--mut);text-decoration:underline}
+#tm{float:right;font-variant-numeric:tabular-nums;font-weight:600}
+.fb{margin-top:14px;font-weight:600}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style></head><body><div id="app"></div>
+<script>
+const U=[
+{n:"Foundations",r:["Mastering Bitcoin","https://github.com/bitcoinbook/bitcoinbook"],i:[
+["What is the maximum number of bitcoin that will ever exist?","21 million",["18 million","100 million","Unlimited"],"21 ?(million|m)\\b|21,?000,?000"],
+["Which problem did Bitcoin’s design solve without a trusted third party?","Double-spending",["Slow banking hours","Password reuse","Currency exchange rates"],"double.?spen"],
+["Roughly how often does the network aim to find a block?","Every 10 minutes",["Every minute","Every hour","Every 24 hours"],"10 ?min|ten ?min"],
+["Who published the Bitcoin whitepaper in 2008 under a pseudonym?","Satoshi Nakamoto",["Hal Finney","Nick Szabo","Adam Back"],"satoshi|nakamoto"]]},
+{n:"Keys and addresses",r:["Mastering Bitcoin, keys chapter","https://github.com/bitcoinbook/bitcoinbook"],i:[
+["Which elliptic curve does Bitcoin use for ECDSA signatures?","secp256k1",["Curve25519","secp256r1","Ed448"],"secp256k1"],
+["What curve operation turns a private key into a public key?","Point multiplication (k × G)",["SHA-256 hashing","AES encryption","Modular addition"],"multipl|k ?[*×x] ?g|scalar"],
+["Which BIP defines mnemonic seed phrases?","BIP39",["BIP32","BIP44","BIP141"],"\\b39\\b"],
+["Which BIP defines hierarchical deterministic (HD) wallets?","BIP32",["BIP39","BIP173","BIP340"],"\\b32\\b"]]},
+{n:"Transactions and Script",r:["Bitcoin Script wiki","https://en.bitcoin.it/wiki/Script"],i:[
+["What does UTXO stand for?","Unspent transaction output",["Unconfirmed transfer exchange order","Universal transaction exchange object","User token exchange offer"],"unspent"],
+["How is a transaction fee determined?","Total inputs minus total outputs",["A fixed protocol fee","A percentage set by the receiver","A separate field the sender fills in"],"input.*(minus|-|less|−).*output|difference"],
+["Which opcode checks a signature against a public key?","OP_CHECKSIG",["OP_HASH160","OP_EQUALVERIFY","OP_RETURN"],"checksig"],
+["What is OP_RETURN used for?","Provably unspendable outputs that carry data",["Returning change to the sender","Refunding failed transactions","Reversing a payment"],"data|unspendable|embed|prune"]]},
+{n:"Mining and consensus",r:["Mastering Bitcoin, mining chapter","https://github.com/bitcoinbook/bitcoinbook"],i:[
+["What must a miner find for proof-of-work?","A block header hash below the target",["A hash above the target","A large prime number","A private key matching the last block"],"below|less than|under|target|leading zero"],
+["How often does difficulty adjust?","Every 2016 blocks",["Every block","Every 1000 blocks","Every halving"],"2016|two weeks|2 weeks"],
+["How many blocks pass between halvings?","210,000",["100,000","2016","525,600"],"210,?000"],
+["What does a full node do with a block that breaks consensus rules?","Rejects it, however much work it has",["Accepts it if it has the most work","Asks miners to vote","Repairs it"],"reject|invalid|ignore|discard"]]},
+{n:"Nodes and Bitcoin Core CLI",r:["Learning Bitcoin from the Command Line","https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line"],i:[
+["Which bitcoin-cli command shows chain and sync status?","getblockchaininfo",["getinfo","getchainstatus","getnetworkstats"],"getblockchaininfo"],
+["Which RPC decodes raw transaction hex into JSON?","decoderawtransaction",["sendrawtransaction","createpsbt","signrawtransactionwithkey"],"decoderawtransaction"],
+["Which network is a local sandbox where you mine blocks on demand?","regtest",["mainnet","testnet","signet"],"regtest"],
+["What does prune=N do?","Deletes old block files but keeps the UTXO set",["Deletes the UTXO set","Skips validating old blocks","Stops relaying transactions"],"delete|discard|old block|disk|space|utxo"]]},
+{n:"SegWit, Taproot, Miniscript",r:["Taproot workshop (Optech)","https://bitcoinops.org/en/schorr-taproot-workshop/"],i:[
+["Which problem did SegWit fix by separating witness data from the txid?","Transaction malleability",["Double spending","Dust outputs","Quantum attacks"],"malleab"],
+["Which signature scheme did Taproot introduce (BIP340)?","Schnorr",["RSA","BLS","DSA"],"schnorr"],
+["Which address encoding do native SegWit addresses use?","Bech32",["Base58Check","Base64","Plain hex"],"bech32"],
+["What is Miniscript?","A structured, analyzable subset of Script",["A smaller chain for light clients","A Lightning compression format","A Python signing library"],"script|policy|analy|compos|subset|structur"]]},
+{n:"Lightning",r:["HTLC overview (Elle Mouton)","https://ellemouton.com/posts/htlc/"],i:[
+["What on-chain output opens a Lightning channel?","A 2-of-2 multisig funding output",["A coinbase output","An OP_RETURN output","A single-sig P2PKH payment"],"2.?of.?2|multisig|funding"],
+["What makes a multi-hop Lightning payment atomic?","Hash locks and timelocks (HTLCs)",["A shared private key","A mining reward","A proof of burn"],"htlc|hash.?lock|preimage|timelock|hash"],
+["What happens if someone broadcasts a revoked channel state?","The counterparty can claim the funds with a penalty transaction",["Nothing, balances are equal","The network rolls it back","Miners refuse it"],"penal|justice|revoc|claim|punish|sweep"],
+["What are the BOLTs?","Lightning’s protocol specifications",["Bitcoin’s block rules","A wallet backup format","A mining protocol"],"spec|protocol|standard"]]},
+{n:"Open-source contribution",r:["How to contribute to open source","https://opensource.guide/how-to-contribute/"],i:[
+["Where does Bitcoin Core development and review happen?","GitHub (bitcoin/bitcoin)",["A private mailing list only","Reddit","Discord"],"github"],
+["What is a sensible step before opening your first PR?","Read CONTRIBUTING and pick a good-first issue",["Push straight to master","Rewrite the codebase","Ask for commit access"],"contributing|good.?first|issue|read"],
+["In review, what does NACK mean?","I disagree with this change",["Approved","Needs a rebase","Already merged"],"disagree|reject|oppos|object"],
+["How does Btrust identify Fellowship candidates?","Holistically: consistency, quality, and collaboration",["Course completion alone","Social media following","Account age"],"consisten|quality|particip|holistic|collab"]]}];
+const ST=[{n:"Multiple choice",d:"Pick the right answer. Two correct in a row per question.",m:"mcq",k:2},
+{n:"Recall",d:"No options. Type the answer. Two correct in a row.",m:"rec",k:2},
+{n:"Trivia blitz",d:"Short answers, 20 seconds each, mixed with earlier units.",m:"rec",k:2,t:20,x:3},
+{n:"Boss gate",d:"One mistake and you restart. 30 seconds each, earlier units included.",m:"rec",k:1,t:30,x:2,s:1}];
+const $=s=>document.querySelector(s),app=$("#app");
+const el=(t,c,x,f)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;if(f)e.onclick=f;return e};
+const sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+let P={unlocked:0,done:{}};
+const save=()=>{try{localStorage.setItem("btd",JSON.stringify(P))}catch(e){}try{fetch("/api/progress",{method:"POST",body:JSON.stringify(P)}).catch(()=>{})}catch(e){}};
+async function load(){try{P=Object.assign(P,JSON.parse(localStorage.getItem("btd")||"{}"))}catch(e){}
+try{const r=await fetch("/api/progress");if(r.ok){const j=await r.json();if(j&&j.done)P=j}}catch(e){}try{const r=await fetch("/api/extra");if(r.ok)U.push(...await r.json())}catch(e){}try{const r=await fetch("/api/streak");if(r.ok)G=await r.json()}catch(e){}home()}
+let armed=0,G=null;const log=(u,s,q,g,ok,to)=>{try{fetch("/api/answer",{method:"POST",body:JSON.stringify({unit:U[u].n,stage:ST[s].n,q,given:g||"",ok,timeout:!!to})}).catch(()=>{})}catch(e){}};
+function home(){const n=U.filter((_,i)=>P.done[i+"-3"]).length;
+const l=[el("h1",0,"Bitcoin Drill"),el("p","mut","Built on the Btrust Builders pathways and Resource Hub. Each unit has four stages, and the next unit stays locked until you clear the boss gate. "+n+" of "+U.length+" units cleared.")];
+if(G&&G.streak!=null)l.push(el("p","fb","GitHub streak: "+G.streak+(G.streak==1?" day":" days")+", "+G.today+" commits today"));if(n==U.length){const p=el("p","fb","Mastery complete. Now go ship a pull request: ");const a=el("a",0,"Btrust Resource Hub");a.href="https://pathways.btrust.tech/resource-hub";a.target="_blank";p.append(a);l.push(p)}
+const ch=el("div","chain");
+U.forEach((x,i)=>{const lock=i>P.unlocked,c=[0,1,2,3].filter(s=>P.done[i+"-"+s]).length;
+const b=el("button","card"+(lock?" lock":c==4?" cl":""),null,()=>!lock&&unit(i));
+b.append(el("b",0,(i+1)+". "+x.n),el("span","mut",lock?"Locked: clear the previous boss gate":c+" of 4 stages cleared"));ch.append(b)});
+const rs=el("button","ghost","Reset all progress",()=>{if(!armed){armed=1;rs.textContent="Click again to erase everything";return}armed=0;P={unlocked:0,done:{}};save();home()});
+app.replaceChildren(...l,ch,rs)}
+function unit(i){const x=U[i],l=[el("button","ghost","Back to units",home),el("h1",0,(i+1)+". "+x.n)];
+const p=el("p","mut","Study first: "),a=el("a",0,x.r[0]);a.href=x.r[1];a.target="_blank";p.append(a);l.push(p);
+ST.forEach((s,j)=>{const lock=j>0&&!P.done[i+"-"+(j-1)],ok=P.done[i+"-"+j];
+const b=el("button","card"+(lock?" lock":ok?" cl":""),null,()=>!lock&&run(i,j));
+b.append(el("b",0,"Stage "+(j+1)+": "+s.n+(ok?" (cleared)":"")),el("span","mut",s.d));l.push(b)});
+app.replaceChildren(...l)}
+function run(u,s){const c=ST[s];let pool=U[u].i.map(it=>({it,k:c.k})),last=null,tm;
+if(c.x&&u>0)sh(U.slice(0,u).flatMap(x=>x.i)).slice(0,c.x).forEach(it=>pool.push({it,k:c.k}));
+const total=pool.length*c.k,left=()=>pool.reduce((a,p)=>a+p.k,0);
+function next(){clearInterval(tm);
+if(!left()){P.done[u+"-"+s]=true;if(s==3&&P.unlocked==u)P.unlocked=u+1;save();return win(u,s)}
+let cand=pool.filter(p=>p.k>0&&p!==last);if(!cand.length)cand=pool.filter(p=>p.k>0);
+const p=cand[Math.floor(Math.random()*cand.length)];last=p;const[q,a,w,re]=p.it;
+const bar=el("div","bar"),fill=el("i");fill.style.width=((total-left())/total*100)+"%";bar.append(fill);
+const meta=el("p","mut",U[u].n+": "+c.n+(c.s?", no mistakes allowed":"")),clock=el("span",0,"");clock.id="tm";meta.append(clock);
+const box=el("div"),fb=el("div","fb");let over=0;
+function grade(ok,to,pick,g){if(over)return;over=1;clearInterval(tm);log(u,s,q,pick?pick.textContent:g,ok,to);
+if(ok)p.k--;else{p.k=c.k;if(c.s)return fail(u,s,a,to)}
+box.querySelectorAll("button,input").forEach(e=>e.disabled=true);
+if(pick){[...box.children].forEach(b=>{if(b.textContent==a)b.classList.add("good")});if(!ok)pick.classList.add("bad")}
+fb.textContent=ok?"Correct.":(to?"Time is up. ":"Not quite. ")+"Answer: "+a+". This question’s streak is reset and it will come back.";
+fb.style.color=ok?"var(--ok)":"var(--no)";
+const nx=el("button","go","Next question",next);fb.after(nx);nx.focus()}
+if(c.m=="mcq")sh([a,...w]).forEach(o=>{const b=el("button","opt",o);b.onclick=()=>grade(o==a,0,b);box.append(b)});
+else{const inp=el("input");inp.placeholder="Type your answer";inp.autocomplete="off";
+const chk=()=>{const v=inp.value.trim();grade(v.length>1&&(v.toLowerCase()==a.toLowerCase()||new RegExp(re,"i").test(v)),0,0,v)};
+inp.onkeydown=e=>{if(e.key=="Enter")chk()};box.append(inp,el("button","go","Check answer",chk));setTimeout(()=>inp.focus(),0)}
+app.replaceChildren(bar,meta,el("h2",0,q),box,fb);
+if(c.t){let t=c.t;clock.textContent=t+"s";tm=setInterval(()=>{t--;clock.textContent=t+"s";if(t<=0)grade(false,1)},1000)}}
+next()}
+function fail(u,s,a,to){app.replaceChildren(el("h2",0,(to?"Time is up. ":"Wrong answer. ")+"Boss gate failed."),el("p",0,"Correct answer: "+a+". Every question reshuffles on the next attempt."),el("button","go","Restart boss gate",()=>run(u,s)),el("br"),el("button","ghost","Back to unit",()=>unit(u)))}
+function win(u,s){const l=[el("h2",0,s==3?"Unit "+(u+1)+" cleared.":"Stage "+(s+1)+" cleared.")];
+l.push(el("p","mut",s==3?(u<U.length-1?"Next unit unlocked.":"Every unit mastered."):"Next stage unlocked."));
+l.push(el("button","go",s<3?"Continue to stage "+(s+2):"Back to units",()=>s<3?run(u,s+1):home()));l.push(el("br"),el("button","ghost","Unit menu",()=>unit(u)));app.replaceChildren(...l)}
+load();
+</script></body></html>
